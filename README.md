@@ -28,4 +28,20 @@ This is a sleek, responsive AI chatbot built using **Django** on the backend and
 ![Chat UI](screenshots/chat-ui.png)
 
 ---
+## 📦 Setup Instructions
 
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/HELLO123-ui/ollama-chatbot.git
+cd ollama-chatbot
+
+python3 -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+ollama run phi3:mini
+
+python manage.py runserver
+Built by Aakarsh Agarwal using Python, Django & Ollama.
