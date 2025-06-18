@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🤖 Chat with AI</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --card: #fff;
+      --text: #000;
+      --user-msg-bg: #e0f7fa;
+      --bot-msg-bg: #e8f5e9;
+    }
+
+    body.dark {
+      --bg: #1e1e1e;
+      --card: #2a2a2a;
+      --text: #eee;
+      --user-msg-bg: #3a506b;
+      --bot-msg-bg: #283618;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 0;
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background-color: var(--card);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background-color: #4a90e2;
+      padding: 20px;
+      text-align: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      position: relative;
+    }
+
+    #dark-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #chat-box {
+      height: 400px;
+      overflow-y: auto;
+      padding: 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg-wrapper {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .user-msg, .bot-msg {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 15px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .user-msg {
+      background-color: var(--user-msg-bg);
+      color: #fff;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .bot-msg {
+      background-color: var(--bot-msg-bg);
+      color: #fff;
+      margin-right: auto;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
+
+    .user-avatar {
+      background-color: #0077b6;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .bot-avatar {
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    form {
+      display: flex;
+      padding: 15px;
+      background-color: #fafafa;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #43a047;
+    }
+
+    .typing {
+      font-style: italic;
+      color: #999;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      🤖 Chat with AI
+      <button id="dark-toggle">🌙</button>
+    </header>
+
+    <div id="chat-box"></div>
+
+    <form id="chat-form" method="POST">
+      {% csrf_token %}
+      <input type="text" id="user-input" name="message" placeholder="Type your message..." required>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const csrftoken = (() => {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith('csrftoken=')) {
+            cookieValue = decodeURIComponent(cookie.substring(10));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    })();
+
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const chatBox = document.getElementById('chat-box');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      chatBox.innerHTML += `
+        <div class="msg-wrapper">
+          <div class="avatar user-avatar">U</div>
+          <div class="user-msg">You: ${userText}</div>
+        </div>`;
+      chatBox.innerHTML += `<div id="typing" class="typing">AI is typing...</div>`;
+      input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const response = await fetch('/get-response/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
+        },
+        body: `message=${encodeURIComponent(userText)}`
+      });
+
+      const data = await response.json();
+      document.getElementById('typing').remove();
+
+      chatBox.innerHTML += `
+        <div class="msg-wrapper">
+          <div class="avatar bot-avatar">🤖</div>
+          <div class="bot-msg">AI: ${data.response}</div>
+        </div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // Dark mode toggle
+    const toggleBtn = document.getElementById('dark-toggle');
+    toggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      toggleBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    });
+  </script>
+</body>
+</html>
+
